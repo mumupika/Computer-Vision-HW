@@ -76,7 +76,7 @@ def detect_edges(image):
     G = (np.abs(grad_x)+np.abs(grad_y))
     cv2.imwrite('./CV_HW1/officialSobel.png',G)
     print("Equal to official implementation?",np.array_equal(G,edge_image))
-    print("dtype is float32?",edge_image.dtype==np.float32)
+    print("Dtype is float32?",edge_image.dtype==np.float32)
     return edge_image
 
 
@@ -98,12 +98,12 @@ def hough_circles(edge_image:np.ndarray, edge_thresh:float, radius_values:list) 
     thresh_edge_image = edge_image
     thresh_edge_image[edge_image < edge_thresh] = 0
     thresh_edge_image[edge_image >= edge_thresh] = 255
-    
+    cv2.imwrite('./CV_HW1/output/coins_edge.png',thresh_edge_image)
     accum_array = []
     H,W = thresh_edge_image.shape
     R_MAX = radius_values[-1]
     for r in radius_values:
-        accum_array_R = np.zeros((H+2*R_MAX,W+2*R_MAX),dtype=np.int32)
+        accum_array_R = np.zeros((H+2*R_MAX,W+2*R_MAX),dtype=np.int32)  # Expand the border of the pictures.
         theta = np.arange(0,(2*np.pi+0.1),0.1)
         for i in range(H):
             for j in range(W):
@@ -118,12 +118,13 @@ def hough_circles(edge_image:np.ndarray, edge_thresh:float, radius_values:list) 
     accum_array:np.ndarray = np.array(accum_array,dtype = np.int32)
     
     for i in range(accum_array.shape[0]):
-        cv2.imwrite(f'./CV_HW1/tmp/{i+1}.png',np.array(accum_array[i]*20,dtype=np.float32))
+        cv2.imwrite(f'./CV_HW1/hough_transform/{i}.png',np.array(20*accum_array[i,:,:],dtype=np.float32))
+    
     return thresh_edge_image,accum_array
     
 
 
-def find_circles(image, accum_array, radius_values, hough_thresh):
+def find_circles(image:np.ndarray, accum_array:np.ndarray, radius_values:list, hough_thresh:int):
     """Find circles in an image using output from Hough transform.
 
     Args:
@@ -142,12 +143,48 @@ def find_circles(image, accum_array, radius_values, hough_thresh):
     - circle_image (3D uint8 array): A copy of the original image with detected
         circles drawn in color.
     """
-    raise NotImplementedError  #TODO
-
+    R,H,W = accum_array.shape
+    orig_H, orig_W, _ = image.shape        # This is the original 3 RGB color image.
+    
+    # The first pass: To filter out the possible radius.
+    circles = list()
+    for r in range(R):
+        accum_array_R = accum_array[r,:,:]
+        current_y,current_x = np.where(accum_array_R > hough_thresh)
+        for i in range(current_x.shape[0]):
+            circles.append((r,int(current_x[i]),int(current_y[i])))
+    
+    # second pass: To merge the value that was very close. sort by dictionary order, then choose the 
+    # brightest center and radius.
+    real_circles = list()
+    count = 0
+    circles.sort(key=lambda x: x[1])
+    while count < len(circles):
+        r,x,y = circles[count]
+        lightness_chosen = accum_array[r,x,y]
+        true_r, true_x, true_y = r,x,y
+        count += 1
+        while  count < len(circles) and abs(circles[count][1]-x) + abs(circles[count][2]-y) < 4:
+            cur_r,cur_x,cur_y = circles[count]
+            lightness = accum_array[cur_r,cur_x,cur_y]
+            count += 1
+            if lightness > lightness_chosen:
+                true_r, true_x, true_y = cur_r, cur_x, cur_y
+        real_circles.append((true_r,true_x-true_r,true_y-true_r))
+    
+    real_circles.sort(key = lambda x: x[0])
+    
+    # third step: Get the circles draw in color. Using cv2's drawing.
+    for circle in real_circles:
+        cv2.circle(image, (circle[1],circle[2]),circle[0],(0,255,0),2)
+    cv2.imwrite('./CV_HW1/output/coins_circle.png',image)
+            
 
 if __name__ == '__main__':
     input_dir = './CV_HW1/data/coins.png'
     image: np.ndarray = cv2.imread(input_dir,cv2.IMREAD_COLOR)
-    image: np.ndarray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-    edge_image:np.ndarray = detect_edges(image)
-    thresh_edge_image, accum_array = hough_circles(edge_image=edge_image,edge_thresh=254,radius_values=[i for i in range(1,21)])
+    gray_image: np.ndarray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+    edge_image:np.ndarray = detect_edges(gray_image)
+    radius_value = [ i for i in range(1,41)]
+    thresh_edge_image, accum_array = hough_circles(edge_image=edge_image,edge_thresh=254,radius_values=radius_value)
+    find_circles(image=image, accum_array=accum_array, radius_values=radius_value, hough_thresh=50)

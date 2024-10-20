@@ -145,16 +145,16 @@ def my_print(attribute_list:list[dict]) -> None:
 def main(argv):
     img_name = argv[0]
     thresh_val = int(argv[1])
-    img = cv2.imread('data/' + img_name + '.png', cv2.IMREAD_COLOR)
+    img = cv2.imread('./CV_HW1/data/' + img_name + '.png', cv2.IMREAD_COLOR)
 
     gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     binary_image = binarize(gray_image, thresh_val=thresh_val)
     labeled_image = label(binary_image)
     attribute_list = get_attribute(labeled_image)
     
-    cv2.imwrite('output/' + img_name + "_gray.png", gray_image)
-    cv2.imwrite('output/' + img_name + "_binary.png", binary_image)
-    cv2.imwrite('output/' + img_name + "_labeled.png", labeled_image)
+    cv2.imwrite('./CV_HW1/output/' + img_name + "_gray.png", gray_image)
+    cv2.imwrite('./CV_HW1/output/' + img_name + "_binary.png", binary_image)
+    cv2.imwrite('./CV_HW1/output/' + img_name + "_labeled.png", labeled_image)
     my_print(attribute_list)
 
 if __name__ == '__main__':
