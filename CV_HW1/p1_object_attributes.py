@@ -23,7 +23,7 @@ def label(binary_image:np.ndarray) -> np.ndarray:
         # The first neighbors.
         neighbors = list()
         if i > 0 and labeled_image[i-1,j] > 0:
-                neighbors.append(labeled_image[i-1,j])
+            neighbors.append(labeled_image[i-1,j])
         if j > 0 and labeled_image[i,j-1] > 0:
             neighbors.append(labeled_image[i,j-1])
         return neighbors
@@ -108,12 +108,12 @@ def get_attribute(labeled_image):
         width_array:np.ndarray = np.arange(1,width+1,1) 
         x_bar:np.float64 = np.sum(width_array @ object_pattern.T) / area
         y_bar:np.float64 = np.sum(height_array @ object_pattern) / area
-        a_org:np.float64 = np.sum((height_array**2).reshape((1,-1)) @ object_pattern)
+        a_org:np.float64 = np.sum(object_pattern @ (width_array**2).reshape((-1,1)))
         b_org:np.float64 = 2*np.sum(height_array.reshape((1,-1)) @ object_pattern @ width_array.reshape((-1,1)))
-        c_org:np.float64 = np.sum(object_pattern @ (width_array**2).reshape((-1,1)))
-        a:np.float64 = (a_org - y_bar ** 2 * area)
+        c_org:np.float64 = np.sum((height_array**2).reshape((1,-1)) @ object_pattern)
+        a:np.float64 = (a_org - x_bar ** 2 * area)
         b:np.float64 = (b_org - 2 * x_bar * y_bar * area)
-        c:np.float64 = (c_org - x_bar ** 2 * area)
+        c:np.float64 = (c_org - y_bar ** 2 * area)
         theta_1=np.arctan2(b,(a-c))/2
         theta_2=theta_1 + np.pi/2
         Energy = lambda a,b,c,theta: a*(np.sin(theta)**2) - b*np.sin(theta)*np.cos(theta) + c*(np.cos(theta)**2)

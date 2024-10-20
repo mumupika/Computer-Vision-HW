@@ -80,7 +80,7 @@ def detect_edges(image):
     return edge_image
 
 
-def hough_circles(edge_image, edge_thresh, radius_values):
+def hough_circles(edge_image:np.ndarray, edge_thresh:float, radius_values:list) -> np.ndarray:
     """Threshold edge image and calculate the Hough transform accumulator array.
 
     Args:
@@ -95,7 +95,32 @@ def hough_circles(edge_image, edge_thresh, radius_values):
     - accum_array (3D int array): Hough transform accumulator array. Should have
         shape R x H x W.
     """
-    raise NotImplementedError  #TODO
+    thresh_edge_image = edge_image
+    thresh_edge_image[edge_image < edge_thresh] = 0
+    thresh_edge_image[edge_image >= edge_thresh] = 255
+    
+    accum_array = []
+    H,W = thresh_edge_image.shape
+    R_MAX = radius_values[-1]
+    for r in radius_values:
+        accum_array_R = np.zeros((H+2*R_MAX,W+2*R_MAX),dtype=np.int32)
+        theta = np.arange(0,(2*np.pi+0.1),0.1)
+        for i in range(H):
+            for j in range(W):
+                if thresh_edge_image[i,j] == 0:
+                    continue
+                x:np.ndarray = (j + r * np.cos(theta)).astype(np.int16)
+                y:np.ndarray = (i + r * np.sin(theta)).astype(np.int16)
+                
+                accum_array_R[y+r,x+r] += 1
+        accum_array.append(accum_array_R)
+    
+    accum_array:np.ndarray = np.array(accum_array,dtype = np.int32)
+    
+    for i in range(accum_array.shape[0]):
+        cv2.imwrite(f'./CV_HW1/tmp/{i+1}.png',np.array(accum_array[i]*20,dtype=np.float32))
+    return thresh_edge_image,accum_array
+    
 
 
 def find_circles(image, accum_array, radius_values, hough_thresh):
@@ -125,3 +150,4 @@ if __name__ == '__main__':
     image: np.ndarray = cv2.imread(input_dir,cv2.IMREAD_COLOR)
     image: np.ndarray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
     edge_image:np.ndarray = detect_edges(image)
+    thresh_edge_image, accum_array = hough_circles(edge_image=edge_image,edge_thresh=254,radius_values=[i for i in range(1,21)])
