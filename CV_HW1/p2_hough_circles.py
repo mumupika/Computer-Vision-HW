@@ -164,11 +164,11 @@ def find_circles(image:np.ndarray, accum_array:np.ndarray, radius_values:list, h
         lightness_chosen = accum_array[r,x,y]
         true_r, true_x, true_y = r,x,y
         count += 1
-        while  count < len(circles) and abs(circles[count][1]-x) + abs(circles[count][2]-y) < 4:
+        while  count < len(circles) and abs(circles[count][1]-x) + abs(circles[count][2]-y) < 9:
             cur_r,cur_x,cur_y = circles[count]
             lightness = accum_array[cur_r,cur_x,cur_y]
             count += 1
-            if lightness > lightness_chosen:
+            if lightness >= lightness_chosen:
                 true_r, true_x, true_y = cur_r, cur_x, cur_y
         real_circles.append((true_r,true_x-true_r,true_y-true_r))
     
@@ -184,7 +184,8 @@ if __name__ == '__main__':
     input_dir = './CV_HW1/data/coins.png'
     image: np.ndarray = cv2.imread(input_dir,cv2.IMREAD_COLOR)
     gray_image: np.ndarray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+    gray_image: np.ndarray = cv2.GaussianBlur(gray_image,(5,5),1,sigmaY=1)
     edge_image:np.ndarray = detect_edges(gray_image)
     radius_value = [ i for i in range(1,41)]
-    thresh_edge_image, accum_array = hough_circles(edge_image=edge_image,edge_thresh=254,radius_values=radius_value)
-    find_circles(image=image, accum_array=accum_array, radius_values=radius_value, hough_thresh=50)
+    thresh_edge_image, accum_array = hough_circles(edge_image=edge_image,edge_thresh=200,radius_values=radius_value)
+    find_circles(image=image, accum_array=accum_array, radius_values=radius_value, hough_thresh=42)
