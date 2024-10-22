@@ -129,6 +129,19 @@ program1/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/program1.dir/build.make CMakeFiles/program1.dir/build
 .PHONY : program1/fast
 
+#=============================================================================
+# Target rules for targets named program2
+
+# Build rule for target.
+program2: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 program2
+.PHONY : program2
+
+# fast build rule for target.
+program2/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/program2.dir/build.make CMakeFiles/program2.dir/build
+.PHONY : program2/fast
+
 p1_object_attributes.o: p1_object_attributes.cpp.o
 .PHONY : p1_object_attributes.o
 
@@ -153,6 +166,30 @@ p1_object_attributes.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/program1.dir/build.make CMakeFiles/program1.dir/p1_object_attributes.cpp.s
 .PHONY : p1_object_attributes.cpp.s
 
+p2_hough_circles.o: p2_hough_circles.cpp.o
+.PHONY : p2_hough_circles.o
+
+# target to build an object file
+p2_hough_circles.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/program2.dir/build.make CMakeFiles/program2.dir/p2_hough_circles.cpp.o
+.PHONY : p2_hough_circles.cpp.o
+
+p2_hough_circles.i: p2_hough_circles.cpp.i
+.PHONY : p2_hough_circles.i
+
+# target to preprocess a source file
+p2_hough_circles.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/program2.dir/build.make CMakeFiles/program2.dir/p2_hough_circles.cpp.i
+.PHONY : p2_hough_circles.cpp.i
+
+p2_hough_circles.s: p2_hough_circles.cpp.s
+.PHONY : p2_hough_circles.s
+
+# target to generate assembly for a file
+p2_hough_circles.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/program2.dir/build.make CMakeFiles/program2.dir/p2_hough_circles.cpp.s
+.PHONY : p2_hough_circles.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -162,9 +199,13 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... program1"
+	@echo "... program2"
 	@echo "... p1_object_attributes.o"
 	@echo "... p1_object_attributes.i"
 	@echo "... p1_object_attributes.s"
+	@echo "... p2_hough_circles.o"
+	@echo "... p2_hough_circles.i"
+	@echo "... p2_hough_circles.s"
 .PHONY : help
 
 

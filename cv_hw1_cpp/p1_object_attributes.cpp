@@ -3,9 +3,12 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/mat.hpp>
 #include <cstring>
+#include <cmath>
+#include <fstream>
 
 // Binarize the gray_image.
 
+const float32_t PI = 3.14159265358979;
 class Union_Set
 {
     public:
@@ -41,11 +44,29 @@ class Union_Set
                     parent[i]=i;
             }
             
-            parent[find(label)] = find(cur);
+            parent[find(cur)] = find(label);
         }
 };
 
-
+void my_print(std::vector<std::map<std::string, float32_t> > &attribute_list)
+{
+    std::fstream file;
+    file.open("./output/attributes.txt",std::ios::out | std::ios::app);
+    for(int i=0;i<attribute_list.size();i++)
+    {
+        auto attribute = attribute_list[i];
+        std::cout << "object " << i+1 << std::endl;
+        file << "object " << i+1 << std::endl;
+        for (auto it = attribute.begin();it != attribute.end(); it = std::next(it,1))
+        {
+            std::cout << (*it).first << ": " << (*it).second << std::endl; 
+            file << (*it).first << ": " << (*it).second << std::endl;
+        }
+        std::cout << "---------------------------------------" << std::endl << std::endl;
+        file <<  "---------------------------------------" << std::endl << std::endl;
+    }
+    file.close();
+}
 
 cv::Mat binarize(cv::Mat gray_image, int threshval)
 {
@@ -151,6 +172,7 @@ cv::Mat label(cv::Mat binary_image)
 void get_attribute(cv::Mat labeled_image)
 {
     int height=labeled_image.rows,width = labeled_image.cols;
+
     std::set <uint16_t> label_level; // Hash set for adding numbers.
     for (int i = 0; i < height; i++)
     {
@@ -163,6 +185,7 @@ void get_attribute(cv::Mat labeled_image)
                 label_level.insert(current_label);  // Find non-repeat label to insert.
         }
     }
+
     std::vector<cv::Mat> picture_list;
     for(int label: label_level)
     {
@@ -182,6 +205,50 @@ void get_attribute(cv::Mat labeled_image)
         picture_list.push_back(current_label_img);
     }
     
+    std::vector<std::map<std::string, float32_t> > attribute_list;
+    // Define the basic cv::Mat for calculation.
+    // The following should be float32_t.
+
+    cv::Mat width_array(1,width,CV_32F);
+    for(int i=0;i<width;i++)
+        width_array.at<float32_t>(0,i) = (float32_t)(i+1);
+    
+    cv::Mat height_array(1,height,CV_32F);
+    for(int i=0;i<height;i++)
+        height_array.at<float32_t>(0,i) = (float32_t)(height  - i);
+    
+    std::set<uint16_t>::iterator it = label_level.begin();
+    for(int i = 0; i < picture_list.size();i++)
+    {
+        std::map<std::string, float32_t> attribute;
+        cv::Mat object_pattern; 
+        picture_list[i].convertTo(object_pattern,CV_32F); // Image
+        float32_t area=cv::sum(object_pattern)[0];
+        float32_t x_bar = cv::sum(width_array * (object_pattern.t()))[0] / area; 
+        float32_t y_bar = cv::sum(height_array * object_pattern)[0] / area;
+        float32_t a_org = cv::sum(object_pattern * (width_array.mul(width_array).t()))[0];
+        float32_t b_org = 2.0 * cv::sum(height_array * (object_pattern * width_array.t()))[0];
+        float32_t c_org = cv::sum(height_array.mul(height_array) * object_pattern)[0];
+        float32_t a = a_org - x_bar * x_bar * area;
+        float32_t b = b_org - 2 * x_bar * y_bar * area;
+        float32_t c = c_org - y_bar * y_bar * area;
+        float32_t theta1 = (float32_t) atan2(b,(a-c))/2.0;
+        float32_t theta2 = (float32_t) (theta1 + PI / 2.0);
+        std::function<float32_t(float32_t,float32_t,float32_t,float32_t)> Energy = [](float32_t a,float32_t b,float32_t c,float32_t theta)
+        {
+            return (float32_t) (a*sin(theta)*sin(theta) - b * sin(theta) * cos(theta) + c * cos(theta) * cos(theta));
+        };
+        float32_t roundedness = Energy(a,b,c,theta1) / Energy(a,b,c,theta2);
+        // map construction.
+        attribute["x"] = x_bar;
+        attribute["y"] = y_bar;
+        attribute["label"] = (float32_t) *it;   // Set using iteration.
+        it = std::next(it,1);
+        attribute["orientation"] = theta1;
+        attribute["roundedness"] = roundedness;
+        attribute_list.push_back(attribute);
+    }
+    my_print(attribute_list);
 }
 
 
@@ -212,10 +279,10 @@ int main(int argc, char *argv[])
         cv::cvtColor(img, gray_image, cv::COLOR_BGR2GRAY);
         cv::Mat binary_image = binarize(gray_image,thresh_val);
         // uint16 pictures for label.
+        cv::imwrite("./output/" + pic + "_binary.png", binary_image);
         binary_image.convertTo(binary_image,CV_16U);
         cv::Mat labeled_image = label(binary_image);
         cv::imwrite("./output/" + pic + "_gray.png", gray_image);
-        cv::imwrite("./output/" + pic + "_binary.png", binary_image);
         cv::Mat saving_labeled_image;
         labeled_image.convertTo(saving_labeled_image,CV_8UC1);
         cv::imwrite("./output/" + pic + "_labeled.png", saving_labeled_image);
